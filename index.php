@@ -1,7 +1,6 @@
 <?php
 require_once 'vendor/autoload.php';
 require __DIR__ . '/inc.config.php';
-
 $json = array(
   "method"=>"login",
   "params" => array(
@@ -37,18 +36,60 @@ $response = $request->send();
 $feed = json_decode($response->getContent());
 
 $devices = $feed->result->deviceList;
+foreach($devices as $device){
+    if (isset($_POST)){
+        if ($_POST['power'] == 'on'){
+            $json = array(
+                "method" => "passthrough",
+                "params" => array(
+                    "deviceId" => $device->deviceId,
+                    "requestData" => json_encode(array(
+                        "system" => array(
+                            "set_relay_state" => array(
+                                state => 1
+                            )
+                        )
+                    )),
+                ),
+            );
+        }else{
+            $json = array(
+                "method" => "passthrough",
+                "params" => array(
+                    "deviceId" => $device->deviceId,
+                    "requestData" => json_encode(array(
+                        "system" => array(
+                            "set_relay_state" => array(
+                                state => 0
+                            )
+                        )
+                    )),
+                ),
+            );
+        }
+        $request = new \cURL\Request('https://wap.tplinkcloud.com?token=' . $token);
+        $request->getOptions()
+            ->set(CURLOPT_TIMEOUT, 5)
+            ->set(CURLOPT_POSTFIELDS, json_encode($json))
+            ->set(CURLOPT_HTTPHEADER, array('Content-Type: application/json'))
+            ->set(CURLOPT_RETURNTRANSFER, true);
+        $response = $request->send();
+        $feed = json_decode($response->getContent());
+        $responseData = json_decode($feed->result->responseData);
+    }
+}
 
 ?>
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>TP Link Token</title>
+    <title>TP Link Smart Plugs</title>
   </head>
   <body>
     <?php
 
-    echo "Token: " . $token . "<br><br>";
+    //echo "Token: " . $token . "<br><br>";
 
     $i = 1;
     foreach($devices as $device){
@@ -79,11 +120,17 @@ $devices = $feed->result->deviceList;
       $feed = json_decode($response->getContent());
       $responseData = json_decode($feed->result->responseData);
       $deviceState = $responseData->system->get_sysinfo->relay_state;
+        if ($deviceState == 0){
+            $setpower='off';
+        }else {
+            $setpower='on';
+        }
 
       echo "Device " . $i . ". " . $device->alias . "<br>";
+
       echo "Type: " . $device->deviceName . " (" . $device->deviceModel . ")<br>";
-      echo "ID: " . $device->deviceId . "<br>";
-      echo "Url: " . $device->appServerUrl . "<br>";
+      //echo "ID: " . $device->deviceId . "<br>";
+      //echo "Url: " . $device->appServerUrl . "<br>";
       echo "State: ";
       echo ($deviceState == 0) ? "Off" : "On";
       echo "<br><br>";
@@ -91,5 +138,16 @@ $devices = $feed->result->deviceList;
     }
 
     ?>
+    <form action=""  method="POST">
+        <label for="Smart Plug" id="app_name_label"  >Smart Plug</label>
+        <input type="radio" name="power"
+            <?php if (isset($power) && $power=="on") echo "checked";?>
+               value="on">On
+        <input type="radio" name="power"
+            <?php if (isset($power) && $power=="off") echo "checked";?>
+               value="off">Off
+        <input type="submit" name"Submit" value="send" >
+    </form>
+
   </body>
 </html>
