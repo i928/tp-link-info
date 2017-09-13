@@ -21,7 +21,6 @@ $response = $request->send();
 $feed = json_decode($response->getContent());
 
 $token = $feed->result->token;
-
 $json = array(
   "method"=>"getDeviceList"
 );
@@ -37,7 +36,7 @@ $feed = json_decode($response->getContent());
 
 $devices = $feed->result->deviceList;
 foreach($devices as $device){
-    if (isset($_POST)){
+    if (isset($_POST['power'])){
         if ($_POST['power'] == 'on'){
             $json = array(
                 "method" => "passthrough",
@@ -46,7 +45,7 @@ foreach($devices as $device){
                     "requestData" => json_encode(array(
                         "system" => array(
                             "set_relay_state" => array(
-                                state => 1
+                                "state" => 1
                             )
                         )
                     )),
@@ -60,7 +59,7 @@ foreach($devices as $device){
                     "requestData" => json_encode(array(
                         "system" => array(
                             "set_relay_state" => array(
-                                state => 0
+                                "state" => 0
                             )
                         )
                     )),
@@ -129,7 +128,7 @@ foreach($devices as $device){
       echo "Device " . $i . ". " . $device->alias . "<br>";
 
       echo "Type: " . $device->deviceName . " (" . $device->deviceModel . ")<br>";
-      //echo "ID: " . $device->deviceId . "<br>";
+      echo "ID: " . $device->deviceId . "<br>";
       //echo "Url: " . $device->appServerUrl . "<br>";
       echo "State: ";
       echo ($deviceState == 0) ? "Off" : "On";
